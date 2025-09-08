@@ -1,0 +1,43 @@
+name: TW50 Alt
+
+on:
+  schedule:
+    # 台灣時間 09:05（UTC 01:05）
+    - cron: '5 1 * * 1-5'
+    # 台灣時間 20:30（UTC 12:30）
+    - cron: '30 12 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Taipei
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Write service account json
+        shell: bash
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: |
+          printf "%s" "$GOOGLE_CREDENTIALS" > service_account.json
+          ls -l service_account.json || true
+
+      - name: Run gha_runner.py (safe alt entry)
+        env:
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+        run: |
+          set -e
+          python gha_runner.py
